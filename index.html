@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Investment Charts</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; background: white; font-family: Arial, sans-serif; }
+    main { max-width: 1200px; margin: auto; padding: 8px 16px; }
+    .charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px 24px; }
+    .chart-container { position: relative; background: #f8f8f8; padding: 6px; height: 490px; }
+    .monthly { height: 310px; }
+    #error { padding: 16px; background: #fff0ef; color: #9b2920; }
+    @media (max-width: 700px) {
+      .charts { grid-template-columns: 1fr; }
+      .chart-container { height: 400px; }
+      .monthly { height: 300px; }
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
+</head>
+<body>
+  <main>
+    <p id="error" role="alert" hidden>Grafikoni nisu učitani. Proverite internet vezu i ponovo učitajte stranicu.</p>
+    <noscript><p>Za prikaz grafikona omogućite JavaScript u pregledaču.</p></noscript>
+    <section class="charts" aria-label="Investment charts">
+      <div class="chart-container"><canvas id="instrumentsChart" role="img" aria-label="Investment Distribution: Stocks $5,000, Bonds $2,000, ETFs $3,000, Crypto $1,000."></canvas></div>
+      <div class="chart-container"><canvas id="sectorsChart" role="img" aria-label="Sector Allocation: Tech 40%, Healthcare 25%, Energy 15%, Finance 20%."></canvas></div>
+      <div class="chart-container monthly"><canvas id="portfolioChart" role="img" aria-label="Portfolio Growth in dollars, January to June: 10,000, 12,000, 14,000, 13,000, 15,000, 17,000."></canvas></div>
+      <div class="chart-container monthly"><canvas id="feesChart" role="img" aria-label="Monthly Expenses in dollars, January to June: 500, 600, 700, 800, 900, 1,000."></canvas></div>
+    </section>
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (typeof Chart === 'undefined') {
+        document.getElementById('error').hidden = false;
+        return;
+      }
+
+      const instruments = {
+        labels: ['Stocks', 'Bonds', 'ETFs', 'Crypto'],
+        data: [5000, 2000, 3000, 1000]
+      };
+      const sectors = {
+        labels: ['Tech', 'Healthcare', 'Energy', 'Finance'],
+        data: [40, 25, 15, 20]
+      };
+      const portfolio = {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+        data: [10000, 12000, 14000, 13000, 15000, 17000]
+      };
+      const expenses = {
+        labels: ['January', 'February', 'March', 'April', 'May', 'June'],
+        data: [500, 600, 700, 800, 900, 1000]
+      };
+      const dollars = new Intl.NumberFormat('en-US', {
+        style: 'currency', currency: 'USD', maximumFractionDigits: 0
+      });
+      Chart.defaults.font.family = 'Arial, sans-serif';
+      Chart.defaults.color = '#666666';
+
+      function chartOptions(title, percent = false) {
+        return {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            title: { display: true, text: title, color: '#333333' },
+            legend: { position: 'top' },
+            tooltip: {
+              callbacks: {
+                label: context => `${context.label}: ${percent ? context.raw + '%' : dollars.format(context.raw)}`
+              }
+            }
+          }
+        };
+      }
+
+      // 1. Polar Area Chart — prikazuje investirani iznos po finansijskim instrumentima.
+      new Chart(document.getElementById('instrumentsChart'), {
+        type: 'polarArea',
+        data: {
+          labels: instruments.labels,
+          datasets: [{
+            data: instruments.data,
+            backgroundColor: ['#4b8fe2', '#7b8d91', '#c4c4c4', '#8b6f43'],
+            borderColor: '#ffffff', borderWidth: 1
+          }]
+        },
+        options: {
+          ...chartOptions('Investment Distribution'),
+          scales: { r: { beginAtZero: true, max: 5000, ticks: { stepSize: 500, backdropColor: 'transparent' } } }
+        }
+      });
+
+      // 2. Pie Chart — prikazuje procentualnu raspodelu ulaganja po sektorima.
+      new Chart(document.getElementById('sectorsChart'), {
+        type: 'pie',
+        data: {
+          labels: sectors.labels,
+          datasets: [{
+            data: sectors.data,
+            backgroundColor: ['#a2babc', '#aeac7e', '#878f99', '#6b4226'],
+            borderColor: '#ffffff', borderWidth: 2
+          }]
+        },
+        options: chartOptions('Sector Allocation', true)
+      });
+
+      // 3. Line Chart — prati vrednost portfolija od januara do juna.
+      new Chart(document.getElementById('portfolioChart'), {
+        type: 'line',
+        data: {
+          labels: portfolio.labels,
+          datasets: [{
+            label: 'Portfolio Growth ($)', data: portfolio.data,
+            borderColor: '#53566e', backgroundColor: 'rgba(83, 86, 110, 0.2)',
+            fill: true, tension: 0, pointRadius: 3, pointHoverRadius: 5
+          }]
+        },
+        options: {
+          ...chartOptions('Portfolio Growth ($)'),
+          scales: { y: { min: 10000, max: 17000, ticks: { stepSize: 1000 } } }
+        }
+      });
+
+      // 4. Bar Chart — prikazuje mesečne troškove kod brokera.
+      new Chart(document.getElementById('feesChart'), {
+        type: 'bar',
+        data: {
+          labels: expenses.labels,
+          datasets: [{ label: 'Monthly Expenses ($)', data: expenses.data, backgroundColor: '#ff6b60' }]
+        },
+        options: {
+          ...chartOptions('Monthly Expenses ($)'),
+          scales: {
+            x: { title: { display: true, text: 'Months' }, ticks: { maxRotation: 0, minRotation: 0 } },
+            y: { beginAtZero: true, max: 1000, ticks: { stepSize: 100 }, title: { display: true, text: 'Expenses ($)' } }
+          }
+        }
+      });
+    });
+  </script>
+</body>
+</html>
